@@ -1,2 +1,2 @@
-alter table if exists db_training.course
+alter table if exists shiweiyang.course
     add "description" varchar(300);

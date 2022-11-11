@@ -27,7 +27,7 @@ public class MainZonkyTest {
   public void test_select() throws SQLException {
     DataSource dataSource = db.getTestDatabase();
     QueryRunner queryRunner = new QueryRunner(dataSource);
-    String sql = "select id, name, description from db_training.course where 1=1";
+    String sql = "select id, name, description from shiweiyang.course where 1=1";
     List<Map<String, Object>> result = queryRunner.query(sql, MainZonkyTest::resultSetHandler);
     Assert.assertEquals(result.size(), 0);
   }
@@ -36,11 +36,11 @@ public class MainZonkyTest {
   public void test_insert() throws SQLException {
     DataSource dataSource = db.getTestDatabase();
     QueryRunner queryRunner = new QueryRunner(dataSource);
-    String sql = "insert into db_training.course(name, description) values (?,?)";
+    String sql = "insert into shiweiyang.course(name, description) values (?,?)";
     ScalarHandler<Integer> handler = new ScalarHandler<>();
     int id = queryRunner.insert(sql, handler, "jack", "description");
     Assert.assertEquals(1, id);
-    sql = "select id, name, description from db_training.course where 1=1";
+    sql = "select id, name, description from shiweiyang.course where 1=1";
     List<Map<String, Object>> result = queryRunner.query(sql, MainZonkyTest::resultSetHandler);
     System.out.println(result);
     Assert.assertEquals(result.size(), 1);

@@ -4,6 +4,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -21,29 +25,64 @@ import org.junit.Test;
 public class MainOtjTest {
 
   @Rule
-  public PreparedDbRule db = EmbeddedPostgresRules.preparedDatabase(FlywayPreparer.forClasspathLocation("db/migration"));
+  public PreparedDbRule db;
+
+  private ExecutorService executor = Executors.newSingleThreadExecutor();
+
+  private void setupDb() {
+    if (db == null) {
+      db = EmbeddedPostgresRules.preparedDatabase(FlywayPreparer.forClasspathLocation("db/migration"));
+    }
+  }
 
   @Test
   public void test_select() throws SQLException {
+    setupDb();
     DataSource dataSource = db.getTestDatabase();
     QueryRunner queryRunner = new QueryRunner(dataSource);
-    String sql = "select id, name, description from db_training.course where 1=1";
+    String sql = "select id, name, description from shiweiyang.course where 1=1";
     List<Map<String, Object>> result = queryRunner.query(sql, MainOtjTest::resultSetHandler);
     Assert.assertEquals(result.size(), 0);
   }
 
   @Test
   public void test_insert() throws SQLException {
+    setupDb();
     DataSource dataSource = db.getTestDatabase();
     QueryRunner queryRunner = new QueryRunner(dataSource);
-    String sql = "insert into db_training.course(name, description) values (?,?)";
-    ScalarHandler<Integer> handler = new ScalarHandler<>();
-    int id = queryRunner.insert(sql, handler, "jack", "description");
-    Assert.assertEquals(1, id);
-    sql = "select id, name, description from db_training.course where 1=1";
+    generateData(dataSource, 10);
+    String sql = "select id, name, description from shiweiyang.course where 1=1";
     List<Map<String, Object>> result = queryRunner.query(sql, MainOtjTest::resultSetHandler);
     System.out.println(result);
-    Assert.assertEquals(result.size(), 1);
+    Assert.assertEquals(result.size(), 10);
+  }
+
+  @Test
+  public void test_future() throws InterruptedException, ExecutionException {
+    Future<Integer> future = calculate(10);
+    while (!future.isDone()) {
+      System.out.println("Calculating...");
+      Thread.sleep(500);
+    }
+    Integer result = future.get();
+    System.out.println("result: "+result);
+  }
+
+  public Future<Integer> calculate(Integer input) {
+    return executor.submit(() -> {
+      Thread.sleep(1000);
+      return input * input;
+    });
+  }
+
+  private void generateData(DataSource dataSource, int count) throws SQLException {
+    QueryRunner queryRunner = new QueryRunner(dataSource);
+    String sql = "insert into shiweiyang.course(name, description) values (?,?)";
+    ScalarHandler<Integer> handler = new ScalarHandler<>();
+    for (int i = 0; i < count; i++) {
+      int id = queryRunner.insert(sql, handler, "jack", "description");
+      Assert.assertEquals(i+1, id);
+    }
   }
 
   private static List<Map<String, Object>> resultSetHandler(ResultSet resultSet) throws SQLException {
